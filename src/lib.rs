@@ -150,13 +150,10 @@ fn parse_sealed_trait(mut item_trait: syn::ItemTrait, args: TraitArguments) -> T
     let seal = seal_name(trait_ident);
     let vis = &args.visibility;
 
-    let type_params = trait_generics
-        .type_params()
-        .map(|syn::TypeParam { ident, .. }| -> syn::TypeParam { parse_quote!( #ident ) });
-
+    let (_, ty_generics, where_clause) = trait_generics.split_for_impl();
     item_trait
         .supertraits
-        .push(parse_quote!( #seal::Sealed <#(#type_params, )*> ));
+        .push(parse_quote!( #seal::Sealed #ty_generics ));
 
     let mod_code = if args.erased {
         let lifetimes = trait_generics.lifetimes();
@@ -174,7 +171,7 @@ fn parse_sealed_trait(mut item_trait: syn::ItemTrait, args: TraitArguments) -> T
     } else {
         quote! {
             use super::*;
-            pub trait Sealed #trait_generics {}
+            pub trait Sealed #trait_generics #where_clause {}
         }
     };
 
